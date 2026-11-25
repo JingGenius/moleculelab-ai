@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Molecular Explorer · MoleculeLab AI</title>
+<style>
+:root{--bg:#f4f7fb;--panel:#fff;--ink:#0e1726;--mute:#5b6878;--line:#d3dce8;--acc:#2540ff;--acc2:#00a3b8;--accbg:rgba(37,64,255,.08);--warn:#8a5a00;--warnbg:#fff4dc;--bad:#b3261e}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0d1319;--panel:#161e28;--ink:#e8eef6;--mute:#93a1b2;--line:#2a3745;--acc:#7c93ff;--acc2:#3fd0e3;--accbg:rgba(124,147,255,.12);--warn:#f1c36b;--warnbg:#2e2412;--bad:#ff8a80;color-scheme:dark}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 system-ui,-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;padding:env(safe-area-inset-top,0px) 0 env(safe-area-inset-bottom,0px)}
+header{display:flex;align-items:center;gap:16px;padding:14px 28px;background:var(--panel);border-bottom:1px solid var(--line)}
+header a{color:var(--mute);text-decoration:none;font:600 15px ui-monospace,Consolas,monospace}
+header span{flex:1;color:var(--acc);font-weight:600}
+.lang{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.lang button{border:0;background:none;color:var(--mute);padding:5px 12px;font:inherit;cursor:pointer}
+.lang button[aria-pressed="true"]{background:var(--acc);color:var(--panel)}
+main{max-width:1100px;margin:0 auto;padding:26px 22px 60px}
+.search{display:flex;gap:8px;flex-wrap:wrap}
+.search input{flex:1;min-width:230px;padding:13px 15px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--ink);font:inherit;font-size:16px}
+.search select{padding:0 10px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--ink);font:inherit}
+.go,.sm{border:0;border-radius:10px;background:var(--acc);color:var(--panel);font:inherit;font-weight:600;cursor:pointer}
+.go{padding:0 26px;height:48px}.sm{padding:6px 14px;font-size:13px}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+#msg{margin:16px 0;color:var(--mute)}#msg.err{color:var(--bad)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px;margin-top:16px}
+.card h3{margin:0 0 10px;font-size:15px}
+.head{display:flex;gap:12px;align-items:baseline;flex-wrap:wrap}.head h2{margin:0;font-size:26px;font-weight:600}
+.badge{font-size:13px;padding:2px 10px;border-radius:99px;background:var(--accbg);color:var(--acc);font-weight:600}
+.mono{font:13px ui-monospace,Consolas,monospace;color:var(--mute);word-break:break-all}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.v{height:300px;background:#fff;border-radius:8px;position:relative;display:flex;align-items:center;justify-content:center;color:#5b6878;text-align:center;padding:12px}
+.v svg{width:100%;height:100%}.v svg rect:first-of-type{fill:transparent!important}
+.bar{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;align-items:center;font-size:13px;color:var(--mute)}
+.chip{border:1px solid var(--line);background:var(--panel);color:var(--ink);padding:4px 12px;border-radius:99px;font:inherit;font-size:13.5px;cursor:pointer}
+.chip[aria-pressed="true"]{border-color:var(--acc);background:var(--accbg);color:var(--acc);font-weight:600}
+table{width:100%;border-collapse:collapse}th,td{padding:8px 6px;border-bottom:1px solid var(--line);text-align:right}
+th:first-child,td:first-child{text-align:left}th{font-size:13px;color:var(--mute);font-weight:600}td{font-variant-numeric:tabular-nums}
+.note{font-size:13px;color:var(--mute);margin:10px 0 0}.warn{background:var(--warnbg);color:var(--warn);padding:9px 12px;border-radius:8px;font-size:14px;margin-top:16px}
+.cand{display:flex;gap:12px;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--line)}.cand:last-child{border:0}
+@media (max-width:760px){.two{grid-template-columns:1fr}header{padding:12px 16px}main{padding:20px 14px 50px}}
+</style>
+</head>
+<body>
+<header><a href="index.html">← MoleculeLab AI</a><span id="ttl"></span><div class="lang"><button data-l="en">EN</button><button data-l="zh">中文</button></div></header>
+<main>
+<div class="search"><input id="q" autocomplete="off"><select id="ty"></select><button class="go" id="go"></button></div>
+<div id="msg"></div><div id="cands"></div><div id="res"></div>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@rdkit/rdkit@2025.3.3-1.0.0/dist/RDKit_minimal.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/3Dmol/2.0.1/3Dmol-min.js"></script>
+<script>
+var L={en:{ttl:'Molecular Explorer',ph:'Name, formula or SMILES, e.g. aspirin, H2SO4, CC(=O)O',go:'Search',ty:['Auto','Name','Formula','SMILES'],load:'Searching PubChem and calculating…',
+nf:'No matching compound found. Check the spelling or try another input type.',badsmi:'This SMILES could not be parsed. Please check it.',nonet:'Could not complete the PubChem request from this page. Details: ',rdfail:'The chemistry engine (RDKit) failed to load. Check your connection and reload.',
+pick:'Several records match. Choose one:',pickf:'A formula does not identify a single structure. Showing up to 12 PubChem matches. Choose one:',use:'Select',
+p2d:'2D structure',p3d:'3D structure',comp:'Computed conformer from PubChem, not an experimentally determined structure.',no3d:'No 3D conformer is available for this record.',
+props:'Properties',prop:'Property',loc:'Local (RDKit)',db:'Database (PubChem)',groups:'Functional groups',click:'Click a group to highlight it in the 2D structure. Counts are structural matches.',none:'None of the 16 supported groups found.',
+ionicN:'This is an ionic or multi-component species. 3D conformers and organic descriptors do not apply, so they are not shown.',metalN:'Metal-containing compounds are only partly supported. Descriptors and groups are not shown.',inorgN:'Inorganic compound: organic functional-group analysis does not apply.',
+src:'Sources and methods',cls:'Classification (automatic, heuristic)',
+c:{org:'Organic compound',inorg:'Inorganic compound',ionic:'Ionic / multi-component',metal:'Metal-containing (limited support)'},
+rows:{mw:'Molecular weight',em:'Exact mass',logp:'LogP',tpsa:'TPSA',hbd:'H-bond donors',hba:'H-bond acceptors',rot:'Rotatable bonds',rings:'Ring count',heavy:'Heavy atoms',charge:'Formal charge',fsp3:'Fraction Csp3'},
+note:'LogP: RDKit uses the Crippen method, PubChem uses XLogP3. They are different algorithms and can disagree. H-bond counts also follow different definitions.',
+svg:'Download SVG',bs:'Ball & stick',st:'Stick',ln:'Line',nopc:'Not found in PubChem: only local RDKit results are shown.',got:'Retrieved',
+g:{hydroxyl:'Hydroxyl',carbonyl:'Carbonyl',carboxylic:'Carboxylic acid',ester:'Ester',ether:'Ether',amine:'Amine',amide:'Amide',aldehyde:'Aldehyde',ketone:'Ketone',nitrile:'Nitrile',nitro:'Nitro',halogen:'Halogen',aromatic:'Aromatic ring',alkene:'Alkene',alkyne:'Alkyne',thiol:'Thiol'}},
+zh:{ttl:'分子探索器',ph:'名称、分子式或 SMILES，例如 aspirin、H2SO4、CC(=O)O',go:'搜索',ty:['自动','名称','分子式','SMILES'],load:'正在查询 PubChem 并计算…',
+nf:'没有找到匹配的化合物。请检查拼写，或换一种输入类型。',badsmi:'这个 SMILES 无法解析，请检查。',nonet:'无法从本页完成 PubChem 请求。详情：',rdfail:'化学计算引擎（RDKit）加载失败。请检查网络后刷新。',
+pick:'有多条记录匹配，请选择一条：',pickf:'分子式不能唯一确定结构。下面最多显示 12 条 PubChem 匹配，请选择：',use:'选择',
+p2d:'二维结构',p3d:'三维结构',comp:'PubChem 提供的计算构象，不是实验测定的结构。',no3d:'这条记录没有可用的三维构象。',
+props:'分子性质',prop:'性质',loc:'本地计算（RDKit）',db:'数据库（PubChem）',groups:'官能团',click:'点击官能团可在二维结构中高亮。数量为结构匹配次数。',none:'未发现 16 种支持的官能团。',
+ionicN:'这是离子或多组分物质，三维构象和有机描述符不适用，所以不显示。',metalN:'含金属化合物只有部分支持，这里不显示描述符和官能团。',inorgN:'无机化合物：有机官能团分析不适用。',
+src:'来源与方法',cls:'化合物分类（自动判断，仅为启发式）',
+c:{org:'有机化合物',inorg:'无机化合物',ionic:'离子 / 多组分',metal:'含金属（有限支持）'},
+rows:{mw:'分子量',em:'精确质量',logp:'LogP',tpsa:'TPSA',hbd:'氢键供体',hba:'氢键受体',rot:'可旋转键',rings:'环数量',heavy:'非氢原子数',charge:'形式电荷',fsp3:'Fsp3（sp3 碳比例）'},
+note:'LogP：RDKit 用 Crippen 方法，PubChem 用 XLogP3，两者算法不同，结果可能不一致。氢键数量的定义也不同。',
+svg:'下载 SVG',bs:'球棍',st:'棍状',ln:'线状',nopc:'PubChem 中未找到：仅显示本地 RDKit 结果。',got:'查询时间',
+g:{hydroxyl:'羟基',carbonyl:'羰基',carboxylic:'羧酸',ester:'酯',ether:'醚',amine:'胺',amide:'酰胺',aldehyde:'醛',ketone:'酮',nitrile:'腈',nitro:'硝基',halogen:'卤素',aromatic:'芳香环',alkene:'烯',alkyne:'炔',thiol:'硫醇'}}};
+var RB='https://cdn.jsdelivr.net/npm/@rdkit/rdkit@2025.3.3-1.0.0/dist/',PUG='https://pubchem.ncbi.nlm.nih.gov/rest/pug',RD=null,cur=null,cands=null,lang='en',v3=null,hlg=null,m3='bs',lastQ=null;
+var $=function(i){return document.getElementById(i)},E=encodeURIComponent;
+var MET=/^(Li|Na|K|Rb|Cs|Be|Mg|Ca|Sr|Ba|Al|Ga|Sn|Pb|Ti|V|Cr|Mn|Fe|Co|Ni|Cu|Zn|Zr|Mo|Ru|Rh|Pd|Ag|Cd|Pt|Au|Hg)$/;
+var G=[['hydroxyl',['[OX2H][#6;!$([#6]=[O,S,N])]']],['carbonyl',['[#6X3]=[OX1]']],['carboxylic',['[CX3](=O)[OX2H1,OX1-]']],['ester',['[#6][CX3](=O)[OX2H0][#6]']],['ether',['[OD2]([#6;!$([#6]=O)])[#6;!$([#6]=O)]']],['amine',['[NX3;+0;!$(N-C=[O,S,N]);!$(N-S(=O)=O);!$(N-[#7,#8])]']],['amide',['[NX3][CX3](=[OX1])[#6,#1]']],['aldehyde',['[CX3H1](=O)']],['ketone',['[#6][CX3](=O)[#6]']],['nitrile',['[CX2]#[NX1]']],['nitro',['[$([NX3](=O)=O),$([NX3+](=O)[O-])][!#8]']],['halogen',['[F,Cl,Br,I]']],['aromatic',['a1aaaaa1','a1aaaa1']],['alkene',['[CX3]=[CX3]']],['alkyne',['[CX2]#[CX2]']],['thiol',['[SX2H]']]];
+var ready=typeof initRDKitModule==='function'?initRDKitModule({locateFile:function(f){return RB+f}}).then(function(m){RD=m;return m}):Promise.reject(new Error('script'));
+ready.catch(function(){});
+try{lang=localStorage.getItem('ml-lang')||(/^zh/i.test(navigator.language)?'zh':'en')}catch(e){}
+function J(u,o){return fetch(u,o).then(function(r){if(!r.ok){var e=new Error('HTTP '+r.status);e.st=r.status;throw e}return r.json()})}
+function say(t,er){var m=$('msg');m.textContent=t||'';m.className=er?'err':''}
+function hill(f){var c={};(function add(s,m){var r=/([A-Z][a-z]?)(\d*)|\(([^()]*)\)(\d*)/g,x;while((x=r.exec(s)))x[1]?c[x[1]]=(c[x[1]]||0)+(+x[2]||1)*m:add(x[3],m*(+x[4]||1))})(f,1);
+var k=Object.keys(c).sort();if(c.C)k=['C'].concat(c.H?['H']:[],k.filter(function(e){return e!=='C'&&e!=='H'}));return k.map(function(e){return e+(c[e]>1?c[e]:'')}).join('')}
+function detect(q,t){if(t!=='auto')return t;if(/[=#()\[\]\/\\@%]/.test(q)&&!/\s/.test(q))return 'smiles';
+if(/^[A-Z][a-z]?\d*([A-Z][a-z]?\d*|\([A-Za-z0-9]+\)\d*)*$/.test(q)&&/\d/.test(q))return 'formula';return 'name'}
+function fmt(v,d){return v==null||v===''||isNaN(v)?'—':(+v).toFixed(d)}
+function sub(f){return (f||'').replace(/\d+/g,'<sub>$&</sub>')}
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+async function run(q,ty){q=q.trim();if(!q)return;lastQ=[q,ty];$('cands').innerHTML='';$('res').innerHTML='';say(L[lang].load);
+try{await ready}catch(e){return say(L[lang].rdfail,1)}
+try{var k=detect(q,ty);
+if(k==='smiles'){if(await bySmiles(q))return say('');if(ty!=='auto')return say(L[lang].badsmi,1);k='name'}
+if(k==='formula'){var h=hill(q),j=await J(PUG+'/compound/fastformula/'+E(h)+'/cids/JSON?MaxRecords=12');
+if(j.Waiting)return say(L[lang].nonet+'PubChem is still processing, please retry.',1);var ids=j.IdentifierList.CID;
+if(ids.length===1){await loadCid(ids[0]);return say('')}await showCands(ids,1);return say('')}
+var j2=await J(PUG+'/compound/name/'+E(q)+'/cids/JSON'),i2=j2.IdentifierList.CID;
+if(i2.length===1){await loadCid(i2[0])}else await showCands(i2.slice(0,8),0);say('')
+}catch(e){if(e.st===404){if(ty==='auto'&&RD.get_mol(q)){await bySmiles(q);return say('')}return say(L[lang].nf,1)}say(L[lang].nonet+e.message,1)}}
+async function bySmiles(q){var m=RD.get_mol(q);if(!m)return false;var smi=m.get_smiles();m.delete();var cid=null;
+try{var j=await J(PUG+'/compound/smiles/cids/JSON',{method:'POST',headers:{'Content-Type':'application/x-www-form-urlencoded'},body:'smiles='+E(q)});cid=j.IdentifierList.CID[0]||null}catch(e){}
+if(cid)await loadCid(cid);else setCur({cid:null,title:q,pc:{},smiles:smi});return true}
+var PR='Title,MolecularFormula,MolecularWeight,ExactMass,SMILES,ConnectivitySMILES,XLogP,TPSA,HBondDonorCount,HBondAcceptorCount,RotatableBondCount,HeavyAtomCount,Charge';
+async function loadCid(cid){var j;try{j=await J(PUG+'/compound/cid/'+cid+'/property/'+PR+'/JSON')}catch(e){j=await J(PUG+'/compound/cid/'+cid+'/property/Title,MolecularFormula,MolecularWeight,SMILES/JSON')}
+var p=j.PropertyTable.Properties[0];setCur({cid:cid,title:p.Title,pc:p,smiles:p.SMILES||p.ConnectivitySMILES||p.CanonicalSMILES||p.IsomericSMILES})}
+async function showCands(ids,isF){var j=await J(PUG+'/compound/cid/'+ids.join(',')+'/property/Title,MolecularFormula,MolecularWeight,SMILES,ConnectivitySMILES/JSON');cands={f:isF,l:j.PropertyTable.Properties};drawCands()}
+function drawCands(){if(!cands)return;var t=L[lang];$('cands').innerHTML='<div class="card"><h3>'+(cands.f?t.pickf:t.pick)+'</h3>'+cands.l.map(function(p){return '<div class="cand"><div><b>'+esc(p.Title)+'</b> <span class="mono">'+sub(esc(p.MolecularFormula))+' · '+esc(p.MolecularWeight)+' g/mol · CID '+p.CID+'</span><div class="mono">'+esc(p.SMILES||p.ConnectivitySMILES||'')+'</div></div><button class="sm" data-cid="'+p.CID+'">'+t.use+'</button></div>'}).join('')+'</div>'}
+function setCur(o){if(cur&&cur.mol)cur.mol.delete();cur=o;cur.time=new Date().toISOString();hlg=null;cands=null;$('cands').innerHTML='';analyse();render();load3d()}
+function analyse(){var s=cur.smiles,m=s&&RD.get_mol(s);if(!m){cur.bad=1;return}cur.mol=m;
+var mb=m.get_molblock().split('\n'),n=parseInt(mb[3].substr(0,3)),sy=[],ch=0;for(var i=0;i<n;i++)sy.push(mb[4+i].substr(31,3).trim());
+mb.forEach(function(l){if(l.indexOf('M  CHG')===0){var a=l.trim().split(/\s+/);for(var k=3;k<a.length;k+=2)ch+=+a[k+1]}});
+var hasC=sy.indexOf('C')>-1,met=sy.some(function(x){return MET.test(x)});
+cur.cls=(s.indexOf('.')>-1||(met&&!hasC))?'ionic':met?'metal':!hasC?'inorg':'org';cur.charge=ch;
+try{cur.d=JSON.parse(m.get_descriptors())}catch(e){cur.d={}}console.info('RDKit descriptors',cur.d);cur.g=[];
+if(cur.cls==='org')G.forEach(function(g){var at={},bd={},c=0;g[1].forEach(function(sm){var q=RD.get_qmol(sm);if(!q)return;var r=[];try{r=JSON.parse(m.get_substruct_matches(q))}catch(e){}q.delete();if(!Array.isArray(r))r=[];
+r.forEach(function(x){c++;x.atoms.forEach(function(a){at[a]=1});x.bonds.forEach(function(b){bd[b]=1})})});
+if(c)cur.g.push({k:g[0],c:c,at:Object.keys(at).map(Number),bd:Object.keys(bd).map(Number)})})}
+function svg2d(){if(!cur||!cur.mol)return '';var g=cur.g&&cur.g.filter(function(x){return x.k===hlg})[0];
+return g?cur.mol.get_svg_with_highlights(JSON.stringify({width:480,height:300,atoms:g.at,bonds:g.bd})):cur.mol.get_svg(480,300)}
+function render(){var t=L[lang],c=cur;if(!c)return;if(c.bad){$('res').innerHTML='<div class="warn">'+t.badsmi+'</div>';return}
+var d=c.d||{},pc=c.pc||{},o=c.cls==='org',lg=d.CrippenClogP!=null?d.CrippenClogP:d.CrippenLogP,
+R=[['mw',d.amw,2,pc.MolecularWeight,2,0],['em',d.exactmw,4,pc.ExactMass,4,0],['logp',lg,2,pc.XLogP,1,1],['tpsa',d.tpsa,2,pc.TPSA,2,1],['hbd',d.NumHBD!=null?d.NumHBD:d.lipinskiHBD,0,pc.HBondDonorCount,0,1],['hba',d.NumHBA!=null?d.NumHBA:d.lipinskiHBA,0,pc.HBondAcceptorCount,0,1],['rot',d.NumRotatableBonds,0,pc.RotatableBondCount,0,1],['rings',d.NumRings,0,null,0,1],['heavy',d.NumHeavyAtoms,0,pc.HeavyAtomCount,0,0],['charge',c.charge,0,pc.Charge,0,0],['fsp3',d.FractionCSP3,2,null,0,1]];
+var h='<div class="head"><h2>'+esc(c.title)+'</h2><span class="formula mono">'+sub(esc(pc.MolecularFormula))+'</span><span class="badge" title="'+t.cls+'">'+t.c[c.cls]+'</span></div><p class="mono">SMILES: '+esc(c.smiles)+(c.cid?' · <a href="https://pubchem.ncbi.nlm.nih.gov/compound/'+c.cid+'" target="_blank" rel="noopener">PubChem CID '+c.cid+'</a>':'')+'</p>';
+if(!c.cid)h+='<div class="warn">'+t.nopc+'</div>';
+if(c.cls==='ionic')h+='<div class="warn">'+t.ionicN+'</div>';if(c.cls==='metal')h+='<div class="warn">'+t.metalN+'</div>';
+h+='<div class="two"><div class="card"><h3>'+t.p2d+'</h3><div class="v" id="v2">'+svg2d()+'</div><div class="bar"><button class="sm" id="dl">'+t.svg+'</button></div></div>';
+h+='<div class="card"><h3>'+t.p3d+'</h3><div class="v" id="v3">'+(c.cls==='ionic'||c.cls==='metal'?'—':'…')+'</div><div class="bar">'+['bs','st','ln'].map(function(k){return '<button class="chip" data-m="'+k+'" aria-pressed="'+(m3===k)+'">'+t[k]+'</button>'}).join('')+'</div><p class="note">'+t.comp+'</p></div></div>';
+h+='<div class="card"><h3>'+t.props+'</h3><table><tr><th>'+t.prop+'</th><th>'+t.loc+' '+(RD?RD.version():'')+'</th><th>'+t.db+'</th></tr>'+R.filter(function(r){return o||!r[5]}).map(function(r){return '<tr><td>'+t.rows[r[0]]+'</td><td>'+fmt(r[1],r[2])+'</td><td>'+(c.cid?fmt(r[3],r[4]):'—')+'</td></tr>'}).join('')+'</table><p class="note">'+t.note+'</p></div>';
+h+='<div class="card"><h3>'+t.groups+'</h3>'+(o?(c.g.length?'<div class="bar">'+c.g.map(function(x){return '<button class="chip" data-g="'+x.k+'" aria-pressed="'+(hlg===x.k)+'">'+t.g[x.k]+' ×'+x.c+'</button>'}).join('')+'</div><p class="note">'+t.click+'</p>':'<p class="note">'+t.none+'</p>'):'<p class="note">'+(c.cls==='inorg'?t.inorgN:'—')+'</p>')+'</div>';
+h+='<div class="card"><h3>'+t.src+'</h3><p class="note">'+(c.cid?'PubChem PUG REST, CID '+c.cid+'. ':'')+'RDKit '+(RD?RD.version():'')+' (WebAssembly, local). 3Dmol.js 2.0.1. '+t.got+': '+c.time+'</p></div>';
+$('res').innerHTML=h;$('dl').onclick=function(){var b=new Blob([svg2d()],{type:'image/svg+xml'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download=(c.title||'molecule')+'.svg';a.click()};if(c.sdf)show3d()}
+async function load3d(){var c=cur;if(!c||!c.cid||c.cls==='ionic'||c.cls==='metal')return;
+try{var r=await fetch(PUG+'/compound/cid/'+c.cid+'/record/SDF?record_type=3d');if(!r.ok)throw 0;c.sdf=await r.text();if(cur===c)show3d()}catch(e){if(cur===c&&$('v3'))$('v3').textContent=L[lang].no3d}}
+function show3d(){var el=$('v3');if(!el||!cur.sdf||typeof $3Dmol==='undefined')return;el.innerHTML='';v3=$3Dmol.createViewer(el,{backgroundColor:'white'});v3.addModel(cur.sdf,'sdf');sty();v3.zoomTo();v3.render()}
+function sty(){if(!v3)return;var s={bs:{stick:{radius:.14},sphere:{scale:.26}},st:{stick:{radius:.18}},ln:{line:{}}}[m3];v3.setStyle({},s);v3.render()}
+function lbl(){var t=L[lang];$('ttl').textContent=t.ttl;$('q').placeholder=t.ph;$('go').textContent=t.go;
+var ty=$('ty'),v=ty.value||'auto';ty.innerHTML=['auto','name','formula','smiles'].map(function(k,i){return '<option value="'+k+'">'+t.ty[i]+'</option>'}).join('');ty.value=v;
+document.querySelectorAll('.lang button').forEach(function(b){b.setAttribute('aria-pressed',b.dataset.l===lang)});document.documentElement.lang=lang==='zh'?'zh-CN':'en'}
+document.addEventListener('click',function(e){var b;
+if((b=e.target.closest('[data-cid]'))){say(L[lang].load);loadCid(+b.dataset.cid).then(function(){say('')}).catch(function(x){say(L[lang].nonet+x.message,1)})}
+else if((b=e.target.closest('[data-g]'))){hlg=hlg===b.dataset.g?null:b.dataset.g;render()}
+else if((b=e.target.closest('[data-m]'))){m3=b.dataset.m;document.querySelectorAll('[data-m]').forEach(function(x){x.setAttribute('aria-pressed',x.dataset.m===m3)});sty()}
+else if((b=e.target.closest('[data-l]'))){lang=b.dataset.l;try{localStorage.setItem('ml-lang',lang)}catch(x){}lbl();drawCands();render();if(cur&&cur.sdf)show3d()}});
+$('go').onclick=function(){run($('q').value,$('ty').value)};$('q').onkeydown=function(e){if(e.key==='Enter')$('go').click()};
+lbl();var P=new URLSearchParams(location.search);if(P.get('q')){$('q').value=P.get('q');run(P.get('q'),'auto')}
+</script>
+</body>
+</html>

@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MoleculeLab AI</title>
+<style>
+:root{--bg:#f4f7fb;--panel:rgba(255,255,255,.82);--ink:#0e1726;--mute:#5b6878;--line:#d3dce8;--acc:#2540ff;--acc2:#00a3b8;--accbg:rgba(37,64,255,.08);--shadow:rgba(37,64,255,.16);
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0d1319;--panel:rgba(22,30,40,.82);--ink:#e8eef6;--mute:#93a1b2;--line:#2a3745;--acc:#7c93ff;--acc2:#3fd0e3;--accbg:rgba(124,147,255,.12);--shadow:rgba(124,147,255,.22);color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0d1319;--panel:rgba(22,30,40,.82);--ink:#e8eef6;--mute:#93a1b2;--line:#2a3745;--acc:#7c93ff;--acc2:#3fd0e3;--accbg:rgba(124,147,255,.12);--shadow:rgba(124,147,255,.22);color-scheme:dark}
+*{box-sizing:border-box}html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;min-height:100vh;background:var(--bg);color:var(--ink);font:16px/1.55 system-ui,-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;overflow-x:hidden}
+#bg{position:fixed;inset:0;width:100%;height:100%;z-index:0}
+body::before{content:"";position:fixed;inset:0;z-index:1;pointer-events:none;background:radial-gradient(ellipse 55% 45% at 50% 46%,var(--bg) 25%,transparent 75%)}
+header,main{position:relative;z-index:2}
+header{display:flex;justify-content:space-between;align-items:center;padding:18px 28px}
+.brand{font:600 15px ui-monospace,Consolas,monospace;letter-spacing:.3px;color:var(--mute)}
+.lang{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--panel);backdrop-filter:blur(8px)}
+.lang button{border:0;background:none;color:var(--mute);padding:5px 12px;font:inherit;font-size:14px;cursor:pointer}
+.lang button[aria-pressed="true"]{background:var(--acc);color:var(--bg)}
+main{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:calc(100vh - 140px);padding:0 20px 40px;text-align:center}
+h1{margin:0;font-weight:300;font-size:clamp(36px,6.4vw,68px);letter-spacing:-.025em;line-height:1.1}
+.tag{margin:14px 0 36px;color:var(--mute);font-size:clamp(15px,2vw,18px);max-width:34em}
+.search{position:relative;display:flex;align-items:center;gap:8px;width:min(720px,100%);height:64px;padding:0 8px 0 20px;background:var(--panel);border:1px solid var(--line);border-radius:18px;backdrop-filter:blur(14px);box-shadow:0 10px 40px -18px var(--shadow);transition:box-shadow .25s,border-color .25s}
+.search:focus-within{border-color:var(--acc);box-shadow:0 14px 50px -14px var(--shadow),0 0 0 4px var(--accbg)}
+.search::after{content:"";position:absolute;left:24px;right:24px;bottom:-1px;height:2px;background:linear-gradient(90deg,transparent,var(--acc2),var(--acc),transparent);opacity:0;transform:scaleX(.3);transition:.35s}
+.search:focus-within::after{opacity:1;transform:scaleX(1)}
+.search svg{flex:none;width:22px;height:22px;stroke:var(--mute);fill:none;stroke-width:1.8;stroke-linecap:round}
+.search input{flex:1;min-width:0;border:0;outline:0;background:none;color:var(--ink);font:inherit;font-size:18px}
+.search input::placeholder{color:var(--mute);opacity:.75}
+.go{flex:none;height:48px;padding:0 24px;border:0;border-radius:12px;background:var(--acc);color:var(--bg);font:inherit;font-weight:600;cursor:pointer}
+.go:hover{filter:brightness(1.08)}
+button:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+.modes{display:flex;flex-wrap:wrap;justify-content:center;gap:10px;margin-top:22px;width:min(860px,100%)}
+.mode{display:flex;align-items:center;gap:8px;padding:9px 16px;border:1px solid var(--line);border-radius:12px;background:var(--panel);backdrop-filter:blur(8px);color:var(--ink);font:inherit;font-size:15px;cursor:pointer;transition:border-color .2s,background .2s,transform .2s}
+.mode:hover{border-color:var(--acc)}
+.mode[aria-checked="true"]{border-color:var(--acc);background:var(--accbg);color:var(--acc);font-weight:600}
+.mode i{width:7px;height:7px;border-radius:50%;border:1.5px solid var(--mute);flex:none}
+.mode[aria-checked="true"] i{background:var(--acc2);border-color:var(--acc2);box-shadow:0 0 8px var(--acc2)}
+.desc{margin:16px 0 0;min-height:1.6em;color:var(--mute);font-size:15px;max-width:44em}
+.try{margin-top:22px;display:flex;gap:8px;flex-wrap:wrap;justify-content:center;align-items:center;color:var(--mute);font-size:14px}
+.chip{border:0;background:none;color:var(--acc);font:13.5px ui-monospace,Consolas,monospace;cursor:pointer;padding:3px 8px;border-radius:6px}
+.chip:hover{background:var(--accbg)}
+.res{margin-top:28px;width:min(720px,100%);padding:16px 20px;border:1px dashed var(--line);border-radius:14px;background:var(--panel);backdrop-filter:blur(8px);text-align:left;color:var(--mute);font-size:15px}
+.res b{color:var(--ink)}
+.res[hidden]{display:none}
+@media (max-width:640px){header{padding:14px 16px}.search{height:58px}.go{padding:0 16px}.mode{padding:8px 12px;font-size:14px}}
+</style>
+</head>
+<body>
+<canvas id="bg" aria-hidden="true"></canvas>
+<header><div class="brand">MoleculeLab AI</div><div class="lang" role="group" aria-label="Language"><button data-l="en">EN</button><button data-l="zh">中文</button></div></header>
+<main>
+<h1>MoleculeLab AI</h1>
+<p class="tag" id="tag"></p>
+<div class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input id="q" autocomplete="off" aria-label="Search"><button class="go" id="go"></button></div>
+<div class="modes" id="modes" role="radiogroup"></div>
+<p class="desc" id="desc"></p>
+<div class="try" id="try"></div>
+<div class="res" id="res" hidden></div>
+</main>
+<script>
+var M=[
+{id:'explore',ready:1,en:'Molecular Explorer',zh:'分子探索',d:{en:'Enter a name, formula or SMILES to see its structure, properties and functional groups.',zh:'输入名称、分子式或 SMILES，查看结构、性质和官能团。'},p:{en:'Search a molecule: aspirin, H2SO4, SMILES…',zh:'搜索分子：阿司匹林、H2SO4、SMILES…'}},
+{id:'prop',en:'Property Prediction',zh:'性质预测',d:{en:'Predict solubility, lipophilicity and other properties of a molecule.',zh:'预测分子的溶解度、亲脂性等性质。'},p:{en:'Enter a molecule to predict its properties',zh:'输入分子，预测它的性质'}},
+{id:'rxn',en:'Reaction & Retrosynthesis',zh:'反应与逆合成',d:{en:'Explore how a molecule reacts and how it could be made.',zh:'探索分子如何反应，以及可能如何合成。'},p:{en:'Enter a target molecule or reaction',zh:'输入目标分子或反应'}},
+{id:'design',en:'AI Molecular Design',zh:'AI 分子设计',d:{en:'Describe the properties you want and explore candidate molecules.',zh:'描述想要的性质，探索候选分子。'},p:{en:'Describe the molecule you need',zh:'描述你需要的分子'}},
+{id:'mat',en:'Materials & Functional Molecules',zh:'材料与功能分子',d:{en:'Study functional small molecules and how structure relates to use.',zh:'研究功能性小分子，以及结构与用途的关系。'},p:{en:'Search a functional molecule or material',zh:'搜索功能分子或材料'}}];
+var TX={en:{tag:'Understand, compare and redesign molecules, with every data point traced to its source.',go:'Search',tryit:'Try',soon:'Coming in a later phase',
+stub:'The results view is the next milestone. It will use real calculations (RDKit) and PubChem records, each labelled with its source.',unavail:'This module is planned for a later phase.'},
+zh:{tag:'理解、比较和改造分子，每个数据都能追溯到来源。',go:'搜索',tryit:'试试',soon:'后续阶段开放',
+stub:'结果页是下一个里程碑，将使用真实计算（RDKit）和 PubChem 记录，并为每个数据标注来源。',unavail:'该模块计划在后续阶段开放。'}};
+var lang='en',mode='explore',$=function(i){return document.getElementById(i)};
+try{lang=localStorage.getItem('ml-lang')||(/^zh/i.test(navigator.language)?'zh':'en')}catch(e){}
+function cur(){return M.filter(function(m){return m.id===mode})[0]}
+function paint(){var t=TX[lang],m=cur();document.documentElement.lang=lang==='zh'?'zh-CN':'en';
+$('tag').textContent=t.tag;$('go').textContent=t.go;$('q').placeholder=m.p[lang];$('desc').textContent=m.d[lang]+(m.ready?'':' '+t.soon+'.');
+$('modes').innerHTML=M.map(function(x){return '<button class="mode'+(x.ready?' ready':'')+'" role="radio" aria-checked="'+(x.id===mode)+'" data-m="'+x.id+'"><i></i>'+x[lang]+'</button>'}).join('');
+$('try').innerHTML=mode==='explore'?t.tryit+['Aspirin','H2SO4','NaCl','C2H6O'].map(function(s){return '<button class="chip" data-s="'+s+'">'+s+'</button>'}).join(''):'';
+document.querySelectorAll('.lang button').forEach(function(b){b.setAttribute('aria-pressed',b.dataset.l===lang)})}
+function run(){var q=$('q').value.trim();if(!q)return;if(mode==='explore'){location.href='explorer.html?q='+encodeURIComponent(q);return}var t=TX[lang],m=cur(),r=$('res');r.hidden=false;
+r.innerHTML='<b>'+m[lang]+'</b> · '+q.replace(/[<>&]/g,'')+'<br>'+(m.ready?t.stub:t.unavail)}
+document.addEventListener('click',function(e){var a=e.target.closest('[data-m]');if(a){mode=a.dataset.m;$('res').hidden=true;paint()}
+var l=e.target.closest('[data-l]');if(l){lang=l.dataset.l;try{localStorage.setItem('ml-lang',lang)}catch(x){}paint();if(!$('res').hidden)run()}
+var s=e.target.closest('[data-s]');if(s){$('q').value=s.dataset.s;run()}});
+$('go').onclick=run;$('q').onkeydown=function(e){if(e.key==='Enter')run()};
+document.addEventListener('keydown',function(e){if(e.key==='/'&&document.activeElement!==$('q')){e.preventDefault();$('q').focus()}});
+paint();
+/* background: drifting molecular lattice that reacts to the pointer */
+var cv=$('bg'),g=cv.getContext('2d'),N=[],W,H,D,mx=-999,my=-999,still=matchMedia('(prefers-reduced-motion:reduce)').matches;
+function css(v){return getComputedStyle(document.documentElement).getPropertyValue(v).trim()}
+function init(){D=window.devicePixelRatio||1;W=innerWidth;H=innerHeight;cv.width=W*D;cv.height=H*D;g.setTransform(D,0,0,D,0,0);
+var n=Math.min(95,Math.round(W*H/15000));N=[];for(var i=0;i<n;i++)N.push({x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-.5)*.28,vy:(Math.random()-.5)*.28,r:Math.random()<.22?4.5:2,ring:Math.random()<.22});seedMols()}
+var MS=[{a:[['C',0,-1],['C',.87,-.5],['C',.87,.5],['C',0,1],['C',-.87,.5],['C',-.87,-.5]],b:[[0,1,2],[1,2,1],[2,3,2],[3,4,1],[4,5,2],[5,0,1]]},
+{a:[['C',0,-1],['C',.87,-.5],['C',.87,.5],['C',0,1],['C',-.87,.5],['C',-.87,-.5],['C',0,-2],['O',-.87,-2.5,'OH'],['O',.87,-2.5,'O'],['O',1.73,-1,'O'],['C',2.6,-.5],['O',2.6,.5,'O'],['C',3.46,-1]],b:[[0,1,2],[1,2,1],[2,3,2],[3,4,1],[4,5,2],[5,0,1],[0,6,1],[6,7,1],[6,8,2],[1,9,1],[9,10,1],[10,11,2],[10,12,1]]},
+{a:[['C',0,-1],['C',.87,-.5],['C',.87,.5],['C',0,1],['C',-.87,.5],['C',-.87,-.5],['C',1.74,-1],['C',2.61,-.5],['C',2.61,.5],['C',1.74,1]],b:[[0,1,2],[1,2,1],[2,3,2],[3,4,1],[4,5,2],[5,0,1],[1,6,1],[6,7,2],[7,8,1],[8,9,2],[9,2,1]]},
+{a:[['C',0,-1],['C',.87,-.5],['C',.87,.5],['C',0,1],['C',-.87,.5],['C',-.87,-.5],['O',0,-2,'OH'],['N',0,2,'NH'],['C',.87,2.5],['O',.87,3.5,'O'],['C',1.73,2]],b:[[0,1,2],[1,2,1],[2,3,2],[3,4,1],[4,5,2],[5,0,1],[0,6,1],[3,7,1],[7,8,1],[8,9,2],[8,10,1]]},
+{a:[['S',0,0],['O',0,-1.2,'O'],['O',0,1.2,'O'],['O',-1.2,0,'OH'],['O',1.2,0,'OH']],b:[[0,1,2],[0,2,2],[0,3,1],[0,4,1]]},
+{a:[['C',-1.3,.4],['C',0,0],['O',1.3,.4,'OH']],b:[[0,1,1],[1,2,1]]}];
+MS.forEach(function(m){var x=0,y=0;m.a.forEach(function(a){x+=a[1];y+=a[2]});m.cx=x/m.a.length;m.cy=y/m.a.length});
+var MI=[],CC={};
+function seedMols(){MI=[];var k=W<700?2:3;for(var i=0,t=0;i<k&&t<300;t++){var x=Math.random()*W,y=Math.random()*H;if(Math.abs(x-W/2)<W*.3&&Math.abs(y-H/2)<H*.26)continue;MI.push({t:[1,3,2][i],x:x,y:y,rot:Math.random()*6.28,vr:(Math.random()-.5)*.003,vx:(Math.random()-.5)*.14,vy:(Math.random()-.5)*.14,s:30+Math.random()*10});i++}}
+function drawMol(m){var mt=MS[m.t];if(!still){m.x+=m.vx;m.y+=m.vy;m.rot+=m.vr;var e=100;if(m.x<-e)m.x=W+e;if(m.x>W+e)m.x=-e;if(m.y<-e)m.y=H+e;if(m.y>H+e)m.y=-e}
+var c=Math.cos(m.rot),s=Math.sin(m.rot),hl=Math.max(0,1-Math.hypot(m.x-mx,m.y-my)/240);
+var P=mt.a.map(function(a){var x=a[1]-mt.cx,y=a[2]-mt.cy;return[m.x+(x*c-y*s)*m.s,m.y+(x*s+y*c)*m.s]});
+g.globalAlpha=.16+hl*.4;g.strokeStyle=hl>0?CC.acc:CC.mute;g.lineWidth=1.5;g.lineCap='round';
+mt.b.forEach(function(b){var p=P[b[0]],q=P[b[1]],dx=q[0]-p[0],dy=q[1]-p[1],L=Math.hypot(dx,dy)||1,nx=-dy/L*3,ny=dx/L*3;g.beginPath();if(b[2]==2){g.moveTo(p[0]+nx,p[1]+ny);g.lineTo(q[0]+nx,q[1]+ny);g.moveTo(p[0]-nx,p[1]-ny);g.lineTo(q[0]-nx,q[1]-ny)}else{g.moveTo(p[0],p[1]);g.lineTo(q[0],q[1])}g.stroke()});
+g.font='600 13px ui-monospace,Consolas,monospace';g.textAlign='center';g.textBaseline='middle';
+mt.a.forEach(function(a,i){if(a[0]==='C')return;g.fillStyle=CC.bg;g.beginPath();g.arc(P[i][0],P[i][1],10,0,7);g.fill();g.fillStyle=CC.acc2;g.fillText(a[3]||a[0],P[i][0],P[i][1]+1)})}
+function frame(){g.clearRect(0,0,W,H);var line=css('--line'),acc=css('--acc'),acc2=css('--acc2');
+N.forEach(function(p){if(!still){p.x+=p.vx;p.y+=p.vy;if(p.x<0||p.x>W)p.vx*=-1;if(p.y<0||p.y>H)p.vy*=-1}});
+for(var i=0;i<N.length;i++){var a=N[i];for(var j=i+1;j<N.length;j++){var b=N[j],d=Math.hypot(a.x-b.x,a.y-b.y);if(d<135){g.globalAlpha=(1-d/135)*.9;g.strokeStyle=line;g.lineWidth=1;g.beginPath();g.moveTo(a.x,a.y);g.lineTo(b.x,b.y);g.stroke()}}
+var dm=Math.hypot(a.x-mx,a.y-my);if(dm<170){g.globalAlpha=(1-dm/170)*.8;g.strokeStyle=acc;g.beginPath();g.moveTo(a.x,a.y);g.lineTo(mx,my);g.stroke()}}
+CC={bg:css('--bg'),mute:css('--mute'),acc:acc,acc2:acc2};MI.forEach(drawMol);N.forEach(function(p){var dm=Math.hypot(p.x-mx,p.y-my),h=dm<170?1-dm/170:0;g.globalAlpha=.55+h*.45;g.fillStyle=h>0?acc:line;g.strokeStyle=h>0?acc2:line;g.lineWidth=1.6;g.beginPath();g.arc(p.x,p.y,p.r+h*2.5,0,7);if(p.ring){g.fillStyle=css('--bg');g.fill();g.stroke()}else g.fill()});
+g.globalAlpha=1;if(!still)requestAnimationFrame(frame)}
+addEventListener('pointermove',function(e){mx=e.clientX;my=e.clientY;if(still)frame()});addEventListener('resize',function(){init();frame()});
+init();frame();
+</script>
+</body>
+</html>
